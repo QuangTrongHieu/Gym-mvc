@@ -14,7 +14,7 @@ class Database
     {
         try {
             $host = $_ENV['DB_HOST'] ?? 'localhost';
-            $dbname = $_ENV['DB_NAME'] ?? 'gym-php-mvc';
+            $dbname = $_ENV['DB_NAME'] ?? 'gym-php';
             $username = $_ENV['DB_USER'] ?? 'root';
             $password = $_ENV['DB_PASS'] ?? '';
 

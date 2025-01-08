@@ -1,7 +1,7 @@
 -- Xóa database nếu tồn tại và tạo mới
-DROP DATABASE IF EXISTS `gym-mvc`;
-CREATE DATABASE `gym-mvc`;
-USE `gym-mvc`;
+DROP DATABASE IF EXISTS `gym-php`;
+CREATE DATABASE `gym-php`;
+USE `gym-php`;
 
 -- Thiết lập môi trường
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -59,12 +59,14 @@ CREATE TABLE trainers (
   `specialization` text NOT NULL,
   `experience` int(11) NOT NULL,
   `certification` text NOT NULL,
-  `salary` decimal(10,0) NOT NULL,
+  `salary` decimal(10,2) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `eRole` enum('ADMIN','TRAINER','MEMBER', 'USER') NOT NULL DEFAULT 'TRAINER',
-  `status` enum('ACTIVE','INACTIVE') NOT NULL DEFAULT 'ACTIVE',
+  `eRole` varchar(20) NOT NULL DEFAULT 'TRAINER',
+  `status` varchar(20) NOT NULL DEFAULT 'ACTIVE',
   `createdAt` timestamp NOT NULL DEFAULT current_timestamp(),
   `updatedAt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_trainer_username` (`username`),
   UNIQUE KEY `unique_trainer_email` (`email`),

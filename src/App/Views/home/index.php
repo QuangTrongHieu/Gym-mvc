@@ -413,12 +413,6 @@
         color: #555;
     }
 
-        {
-            {
-            ...
-        }
-    }
-
     .hero-section {
         position: relative;
         overflow: hidden;

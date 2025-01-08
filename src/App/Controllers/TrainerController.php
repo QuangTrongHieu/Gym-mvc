@@ -135,49 +135,13 @@ class TrainerController extends BaseController
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
-                // Validate required fields
-                $requiredFields = ['username', 'fullName', 'email', 'password', 'dateOfBirth', 
-                                 'sex', 'phone', 'specialization', 'experience', 'certification', 'salary'];
-                foreach ($requiredFields as $field) {
-                    if (empty($_POST[$field])) {
-                        throw new \Exception("Vui lòng điền đầy đủ thông tin: {$field}");
-                    }
-                }
+                // Debug log
+                error_log("POST data received: " . print_r($_POST, true));
 
-                // Validate email format
-                if (!filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
-                    throw new \Exception('Email không hợp lệ');
-                }
+                // Validate data
+                $this->validateTrainerData($_POST);
 
-                // Validate phone number (Vietnamese format)
-                if (!preg_match('/^(0|\+84)[3|5|7|8|9][0-9]{8}$/', $_POST['phone'])) {
-                    throw new \Exception('Số điện thoại không hợp lệ');
-                }
-
-                // Validate date of birth
-                $dob = new \DateTime($_POST['dateOfBirth']);
-                $today = new \DateTime();
-                $age = $dob->diff($today)->y;
-                if ($age < 18) {
-                    throw new \Exception('Huấn luyện viên phải từ 18 tuổi trở lên');
-                }
-
-                // Validate salary
-                if (!is_numeric($_POST['salary']) || $_POST['salary'] < 0) {
-                    throw new \Exception('Mức lương không hợp lệ');
-                }
-
-                // Check if username already exists
-                if ($this->trainerModel->findByUsername($_POST['username'])) {
-                    throw new \Exception('Tên đăng nhập đã tồn tại');
-                }
-
-                // Check if email already exists
-                if ($this->trainerModel->findByEmail($_POST['email'])) {
-                    throw new \Exception('Email đã được sử dụng');
-                }
-
-                // Prepare trainer data
+                // Prepare data
                 $data = [
                     'username' => trim($_POST['username']),
                     'fullName' => trim($_POST['fullName']),
@@ -186,62 +150,76 @@ class TrainerController extends BaseController
                     'dateOfBirth' => $_POST['dateOfBirth'],
                     'sex' => $_POST['sex'],
                     'phone' => trim($_POST['phone']),
-                    'specialization' => trim($_POST['specialization']),
-                    'experience' => trim($_POST['experience']),
-                    'certification' => trim($_POST['certification']),
-                    'salary' => floatval($_POST['salary']),
+                    'specialization' => trim($_POST['specialization'] ?? ''),
+                    'experience' => trim($_POST['experience'] ?? ''),
+                    'certification' => trim($_POST['certification'] ?? ''),
+                    'salary' => floatval($_POST['salary'] ?? 0),
                     'eRole' => 'TRAINER',
                     'status' => 'ACTIVE',
                     'avatar' => 'default.jpg'
                 ];
 
-                // Start transaction
-                $this->trainerModel->beginTransaction();
+                error_log("Prepared data: " . print_r($data, true));
 
-                try {
-                    // Handle avatar upload if provided
-                    if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] !== UPLOAD_ERR_NO_FILE) {
-                        $fileName = $this->handleImageUpload($_FILES['avatar']);
-                        if ($fileName) {
-                            $data['avatar'] = $fileName;
-                        }
-                    }
+                // Create trainer
+                $trainerId = $this->trainerModel->create($data);
 
-                    // Create trainer record
-                    if (!$this->trainerModel->create($data)) {
-                        throw new \Exception('Không thể tạo huấn luyện viên mới');
-                    }
-
-                    $this->trainerModel->commit();
-                    $_SESSION['success'] = 'Thêm huấn luyện viên thành công';
-
-                } catch (\Exception $e) {
-                    // Rollback transaction and delete uploaded file if exists
-                    if ($this->trainerModel->inTransaction()) {
-                        $this->trainerModel->rollBack();
-                    }
-
-                    // Delete uploaded avatar if exists and not default
-                    if (isset($fileName) && $fileName !== 'default.jpg') {
-                        $avatarPath = ROOT_PATH . '/' . self::UPLOAD_DIR . '/' . $fileName;
-                        if (file_exists($avatarPath)) {
-                            unlink($avatarPath);
-                        }
-                    }
-
-                    throw $e;
+                if (!$trainerId) {
+                    throw new \Exception("Không thể tạo huấn luyện viên mới");
                 }
-            } catch (\Exception $e) {
-                $_SESSION['error'] = 'Có lỗi xảy ra: ' . $e->getMessage();
-            }
 
-            $this->redirect('admin/trainer');
+                // Handle avatar if exists
+                if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
+                    $fileName = $this->handleImageUpload($_FILES['avatar']);
+                    if ($fileName) {
+                        $this->trainerModel->update($trainerId, ['avatar' => $fileName]);
+                    }
+                }
+
+                $_SESSION['success'] = 'Thêm huấn luyện viên thành công';
+                $this->redirect('admin/trainer');
+
+            } catch (\Exception $e) {
+                error_log("Error creating trainer: " . $e->getMessage());
+                $_SESSION['error'] = $e->getMessage();
+                $this->redirect('admin/trainer');
+            }
+            return;
         }
 
-        // Show create form for GET request
-        $this->view('admin/Trainer/create', [
-            'title' => 'Thêm huấn luyện viên mới'
-        ]);
+        $this->view('admin/Trainer/create', ['title' => 'Thêm huấn luyện viên mới']);
+    }
+
+    // Hàm kiểm tra dữ liệu
+    private function validateTrainerData($data) 
+    {
+        // Kiểm tra các trường bắt buộc
+        $requiredFields = ['username', 'fullName', 'email', 'password'];
+        foreach ($requiredFields as $field) {
+            if (empty($data[$field])) {
+                throw new \Exception("Vui lòng điền đầy đủ thông tin: $field");
+            }
+        }
+
+        // Kiểm tra email
+        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            throw new \Exception('Email không hợp lệ');
+        }
+
+        // Kiểm tra số điện thoại
+        if (!preg_match('/^(0|\+84)[3|5|7|8|9][0-9]{8}$/', $data['phone'])) {
+            throw new \Exception('Số điện thoại không hợp lệ');
+        }
+
+        // Kiểm tra username đã tồn tại
+        if ($this->trainerModel->findByUsername($data['username'])) {
+            throw new \Exception('Tên đăng nhập đã tồn tại');
+        }
+
+        // Kiểm tra email đã tồn tại
+        if ($this->trainerModel->findByEmail($data['email'])) {
+            throw new \Exception('Email đã được sử dụng');
+        }
     }
 
     public function edit($id)
