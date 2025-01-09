@@ -1,7 +1,7 @@
 -- Xóa database nếu tồn tại và tạo mới
-DROP DATABASE IF EXISTS `gym-php`;
-CREATE DATABASE `gym-php`;
-USE `gym-php`;
+DROP DATABASE IF EXISTS `gym-mvc`;
+CREATE DATABASE `gym-mvc`;
+USE `gym-mvc`;
 
 -- Thiết lập môi trường
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -216,6 +216,9 @@ CREATE TABLE equipment (
   `status` enum('ACTIVE','MAINTENANCE','BROKEN','RETIRED') NOT NULL,
   `lastMaintenanceDate` date DEFAULT NULL,
   `nextMaintenanceDate` date DEFAULT NULL,
+  `image_path` VARCHAR(255) DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

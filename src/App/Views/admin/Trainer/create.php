@@ -143,12 +143,11 @@
         </div>
     </div>
 </div>
-
-<!-- Preview image script -->
 <script>
+// Image preview function
 function previewImage(input) {
     if (input.files && input.files[0]) {
-        var reader = new FileReader();
+        const reader = new FileReader();
         reader.onload = function(e) {
             document.getElementById('avatarPreview').src = e.target.result;
         }
@@ -157,17 +156,20 @@ function previewImage(input) {
 }
 
 // Form validation
-(function () {
-    'use strict'
-    var forms = document.querySelectorAll('.needs-validation')
-    Array.prototype.slice.call(forms).forEach(function (form) {
-        form.addEventListener('submit', function (event) {
-            if (!form.checkValidity()) {
-                event.preventDefault()
-                event.stopPropagation()
-            }
-            form.classList.add('was-validated')
-        }, false)
-    })
-})()
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('createTrainerForm');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    }, false);
+});
+
+// Reset form when modal is closed
+document.getElementById('createModal').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('createTrainerForm').reset();
+    document.getElementById('avatarPreview').src = '/gym/public/uploads/trainers/default.jpg';
+});
 </script>

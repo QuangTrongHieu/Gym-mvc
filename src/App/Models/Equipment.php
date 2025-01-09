@@ -17,50 +17,44 @@ class Equipment extends BaseModel
     public function create($data)
     {
         try {
-            $sql = "INSERT INTO {$this->table} (
-                        name, 
-                        description, 
-                        image_path, 
-                        purchaseDate, 
-                        price, 
-                        status, 
-                        lastMaintenanceDate, 
-                        nextMaintenanceDate,
-                        created_at,
-                        updated_at
-                    ) VALUES (
-                        :name, 
-                        :description, 
-                        :image_path, 
-                        :purchaseDate, 
-                        :price, 
-                        :status, 
-                        :lastMaintenanceDate, 
-                        :nextMaintenanceDate,
-                        NOW(),
-                        NOW()
-                    )";
+            $sql = "INSERT INTO equipment (
+                name, 
+                description, 
+                image_path, 
+                purchaseDate, 
+                price, 
+                status, 
+                lastMaintenanceDate, 
+                nextMaintenanceDate
+            ) VALUES (
+                :name, 
+                :description, 
+                :image_path, 
+                :purchaseDate, 
+                :price, 
+                :status, 
+                :lastMaintenanceDate, 
+                :nextMaintenanceDate
+            )";
 
             $stmt = $this->db->prepare($sql);
-
-            $result = $stmt->execute([
-                ':name' => trim($data['name']),
-                ':description' => trim($data['description']),
-                ':image_path' => isset($data['image_path']) ? trim($data['image_path']) : null,
+            
+            $stmt->execute([
+                ':name' => $data['name'],
+                ':description' => $data['description'],
+                ':image_path' => $data['image_path'] ?? null,
                 ':purchaseDate' => $data['purchaseDate'],
-                ':price' => floatval($data['price']),
+                ':price' => $data['price'],
                 ':status' => $data['status'],
-                ':lastMaintenanceDate' => !empty($data['lastMaintenanceDate']) ? $data['lastMaintenanceDate'] : null,
-                ':nextMaintenanceDate' => !empty($data['nextMaintenanceDate']) ? $data['nextMaintenanceDate'] : null
+                ':lastMaintenanceDate' => $data['lastMaintenanceDate'] ?? null,
+                ':nextMaintenanceDate' => $data['nextMaintenanceDate'] ?? null
             ]);
 
-            if ($result) {
-                return $this->db->lastInsertId();
-            }
-            return false;
-        } catch (PDOException $e) {
-            error_log("Error creating equipment: " . $e->getMessage());
-            return false;
+            return $this->db->lastInsertId();
+
+        } catch (\PDOException $e) {
+            error_log("Equipment creation error: " . $e->getMessage());
+            throw new \Exception("Không thể tạo thiết bị: " . $e->getMessage());
         }
     }
 

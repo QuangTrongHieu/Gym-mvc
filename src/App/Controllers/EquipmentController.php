@@ -71,56 +71,73 @@ class EquipmentController extends BaseController
 
     public function create()
     {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Validate dữ liệu
-            $data = [
-                'name' => trim($_POST['name']),
-                'description' => trim($_POST['description']),
-                'purchaseDate' => $_POST['purchaseDate'],
-                'price' => floatval($_POST['price']),
-                'status' => $_POST['status'],
-                'lastMaintenanceDate' => !empty($_POST['lastMaintenanceDate']) ? $_POST['lastMaintenanceDate'] : null,
-                'nextMaintenanceDate' => !empty($_POST['nextMaintenanceDate']) ? $_POST['nextMaintenanceDate'] : null
-            ];
+        try {
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                error_log("Received POST data: " . print_r($_POST, true));
 
-            // Xử lý upload ảnh
-            if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-                $imagePath = $this->handleImageUpload($_FILES['image']);
-                if ($imagePath) {
-                    $data['image_path'] = $imagePath;
+                // Validate data
+                $this->validateEquipmentData($_POST);
+
+                $data = [
+                    'name' => trim($_POST['name']),
+                    'description' => trim($_POST['description']),
+                    'purchaseDate' => $_POST['purchaseDate'],
+                    'price' => floatval($_POST['price']),
+                    'status' => $_POST['status'],
+                    'lastMaintenanceDate' => !empty($_POST['lastMaintenanceDate']) ? $_POST['lastMaintenanceDate'] : null,
+                    'nextMaintenanceDate' => !empty($_POST['nextMaintenanceDate']) ? $_POST['nextMaintenanceDate'] : null
+                ];
+
+                // Handle image upload
+                if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                    error_log("Processing image upload");
+                    $imagePath = $this->handleImageUpload($_FILES['image']);
+                    if ($imagePath) {
+                        $data['image_path'] = $imagePath;
+                    }
                 }
-            }
 
-            // Kiểm tra validate
-            $errors = [];
-            if (empty($data['name'])) {
-                $errors['name'] = 'Vui lòng nhập tên thiết bị';
-            }
-            if (empty($data['purchaseDate'])) {
-                $errors['purchaseDate'] = 'Vui lòng nhập ngày mua';
-            }
-            if ($data['price'] <= 0) {
-                $errors['price'] = 'Giá phải lớn hơn 0';
-            }
+                error_log("Attempting to create equipment with data: " . print_r($data, true));
 
-            if (empty($errors)) {
-                if ($this->equipmentModel->create($data)) {
-                    $_SESSION['success'] = 'Thêm thiết bị thành công';
-                    header('Location: /gym/admin/equipment');
-                    exit();
-                } else {
-                    $_SESSION['error'] = 'Có lỗi xảy ra';
-                    header('Location: /gym/admin/equipment');
-                    exit();
+                $result = $this->equipmentModel->create($data);
+
+                if (!$result) {
+                    throw new \Exception("Không thể thêm thiết bị");
                 }
-            }
 
-            $title = 'Thêm thiết bị mới';
-            include 'views/admin/equipment/create.php';
-        } else {
-            $title = 'Thêm thiết bị mới';
-            include 'views/admin/equipment/create.php';
+                $_SESSION['success'] = 'Thêm thiết bị thành công';
+                return $this->redirect('admin/equipment');
+            }
+            
+            $this->view('admin/equipment/create');
+            
+        } catch (\Exception $e) {
+            error_log("Error in equipment creation: " . $e->getMessage());
+            $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
+            return $this->redirect('admin/equipment');
         }
+    }
+
+    private function validateEquipmentData($data) {
+        $errors = [];
+
+        if (empty($data['name'])) {
+            $errors[] = 'Vui lòng nhập tên thiết bị';
+        }
+
+        if (empty($data['purchaseDate'])) {
+            $errors[] = 'Vui lòng nhập ngày mua';
+        }
+
+        if (!isset($data['price']) || floatval($data['price']) <= 0) {
+            $errors[] = 'Giá phải lớn hơn 0';
+        }
+
+        if (!empty($errors)) {
+            throw new \Exception(implode(', ', $errors));
+        }
+
+        return true;
     }
 
     public function edit($id)
